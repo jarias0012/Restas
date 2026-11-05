@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Práctica de Restas con Llevadas</title>
+  <style>
+    :root {
+      --sea: #0D5C6B;
+      --sea-2: #13798A;
+      --deep: #0A3843;
+      --foam: #E6F3F0;
+      --foam-2: #CFE6E0;
+      --card: #FFFFFF;
+      --ink: #16333B;
+      --polbo: #EE5A6F;
+      --ok-bg: #DCF2E4;
+      --ok: #23864D;
+      --bad-bg: #FBE2DF;
+      --bad: #B53C35;
+      --display: "Lilita One", "Arial Rounded MT Bold", sans-serif;
+      --body: "Andika", "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 16px;
+      background: var(--foam);
+      color: var(--ink);
+      font-family: var(--body);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .app-card {
+      background: var(--card);
+      border-radius: 26px;
+      padding: 24px;
+      max-width: 500px;
+      width: 100%;
+      box-shadow: 0 8px 0 var(--foam-2);
+      text-align: center;
+    }
+
+    h1 {
+      font-family: var(--display);
+      color: var(--sea);
+      margin: 0 0 8px 0;
+      font-size: 28px;
+    }
+
+    p.subtitle {
+      margin: 0 0 20px 0;
+      color: #55707A;
+      font-size: 15px;
+    }
+
+    /* Tablero de resta vertical de 4 columnas (1 para el signo, 3 para cifras) */
+    .subtraction-grid {
+      display: grid;
+      grid-template-columns: 40px repeat(3, 56px);
+      gap: 4px;
+      justify-content: center;
+      align-items: center;
+      font-family: var(--display);
+      margin: 20px 0;
+    }
+
+    .cell {
+      width: 56px;
+      height: 50px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 36px;
+      color: var(--ink);
+      position: relative;
+    }
+
+    /* Símbolo de restar situado exactamente en la fila intermedia (columna 1) */
+    .op-symbol {
+      font-size: 36px;
+      color: var(--polbo);
+      grid-column: 1;
+      grid-row: 2;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    /* Casilla pequeña para la llevada de arriba (el 1 al lado del minuendo) */
+    .carry-top {
+      position: absolute;
+      left: -2px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 20px;
+      height: 26px;
+      border: 2px dashed #A9C6C0;
+      border-radius: 6px;
+      font-size: 16px;
+      color: var(--polbo);
+      background: #FFF;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+    }
+
+    /* Contenedor de llevada intermedia a media altura (+1) */
+    .carry-mid-container {
+      position: relative;
+      height: 36px;
+      grid-row: 2;
+    }
+
+    .carry-bottom {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 28px;
+      height: 26px;
+      border: 2px dashed #A9C6C0;
+      border-radius: 6px;
+      font-size: 15px;
+      color: var(--sea-2);
+      background: #FFF;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    /* Casillas de resultado */
+    .ans-input {
+      width: 56px;
+      height: 56px;
+      border: 3px dashed var(--sea-2);
+      border-radius: 12px;
+      font-family: var(--display);
+      font-size: 32px;
+      text-align: center;
+      color: var(--sea);
+      background: #FFF;
+    }
+
+    .ans-input:focus, .carry-top.active, .carry-bottom.active {
+      border-color: var(--polbo);
+      background: #FFF1F3;
+    }
+
+    .line {
+      grid-column: 1 / span 4;
+      height: 4px;
+      background: var(--ink);
+      border-radius: 2px;
+      margin: 6px 0;
+    }
+
+    /* Teclado en pantalla */
+    .numpad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .btn-key {
+      font-family: var(--display);
+      font-size: 24px;
+      height: 48px;
+      border: none;
+      border-radius: 14px;
+      background: var(--foam);
+      color: var(--ink);
+      box-shadow: 0 4px 0 var(--foam-2);
+      cursor: pointer;
+    }
+
+    .btn-key:active {
+      transform: translateY(2px);
+      box-shadow: 0 2px 0 var(--foam-2);
+    }
+
+    .btn-action {
+      background: var(--sea);
+      color: #FFF;
+      box-shadow: 0 4px 0 var(--deep);
+      grid-column: span 3;
+      margin-top: 8px;
+      font-size: 20px;
+    }
+
+    .feedback {
+      margin-top: 16px;
+      padding: 12px;
+      border-radius: 14px;
+      font-weight: bold;
+      display: none;
+    }
+
+    .feedback.ok {
+      background: var(--ok-bg);
+      color: var(--ok);
+      display: block;
+    }
+
+    .feedback.bad {
+      background: var(--bad-bg);
+      color: var(--bad);
+      display: block;
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-card">
+  <h1>Aprende a Restar</h1>
+  <p class="subtitle">Escribe las llevadas en las casillas correspondientes</p>
+
+  <div class="subtraction-grid">
+    <!-- FILA 1: Minuendo (con casillas superiores en las 3 columnas) -->
+    <div style="grid-column: 1; grid-row: 1;"></div>
+    <div class="cell" style="grid-column: 2; grid-row: 1;">
+      <input type="text" class="carry-top" id="ct2" maxlength="1" readonly>
+      <span id="m2">8</span>
+    </div>
+    <div class="cell" style="grid-column: 3; grid-row: 1;">
+      <input type="text" class="carry-top" id="ct1" maxlength="1" readonly>
+      <span id="m1">4</span>
+    </div>
+    <div class="cell" style="grid-column: 4; grid-row: 1;">
+      <input type="text" class="carry-top" id="ct0" maxlength="1" readonly>
+      <span id="m0">6</span>
+    </div>
+
+    <!-- FILA 2 (INTERMEDIA): Signo menos y casillas de llevadas inferiores a media altura -->
+    <div class="op-symbol">−</div>
+    <div class="carry-mid-container" style="grid-column: 2; grid-row: 2;">
+      <input type="text" class="carry-bottom" id="cb2" maxlength="1" readonly>
+    </div>
+    <div class="carry-mid-container" style="grid-column: 3; grid-row: 2;">
+      <input type="text" class="carry-bottom" id="cb1" maxlength="1" readonly>
+    </div>
+    <div class="carry-mid-container" style="grid-column: 4; grid-row: 2;"></div>
+
+    <!-- FILA 3: Sustraendo -->
+    <div style="grid-column: 1; grid-row: 3;"></div>
+    <div class="cell" style="grid-column: 2; grid-row: 3;" id="s2">5</div>
+    <div class="cell" style="grid-column: 3; grid-row: 3;" id="s1">6</div>
+    <div class="cell" style="grid-column: 4; grid-row: 3;" id="s0">3</div>
+
+    <!-- LÍNEA DIVISORIA -->
+    <div class="line" style="grid-row: 4;"></div>
+
+    <!-- FILA 4: Resultado -->
+    <div style="grid-column: 1; grid-row: 5;"></div>
+    <div style="grid-column: 2; grid-row: 5;"><input type="text" class="ans-input" id="r2" readonly></div>
+    <div style="grid-column: 3; grid-row: 5;"><input type="text" class="ans-input" id="r1" readonly></div>
+    <div style="grid-column: 4; grid-row: 5;"><input type="text" class="ans-input" id="r0" readonly></div>
+  </div>
+
+  <div id="feedback" class="feedback"></div>
+
+  <!-- Teclado virtual -->
+  <div class="numpad">
+    <button class="btn-key" onclick="pressNum(1)">1</button>
+    <button class="btn-key" onclick="pressNum(2)">2</button>
+    <button class="btn-key" onclick="pressNum(3)">3</button>
+    <button class="btn-key" onclick="pressNum(4)">4</button>
+    <button class="btn-key" onclick="pressNum(5)">5</button>
+    <button class="btn-key" onclick="pressNum(6)">6</button>
+    <button class="btn-key" onclick="pressNum(7)">7</button>
+    <button class="btn-key" onclick="pressNum(8)">8</button>
+    <button class="btn-key" onclick="pressNum(9)">9</button>
+    <button class="btn-key" onclick="pressNum(0)">0</button>
+    <button class="btn-key" style="grid-column: span 2;" onclick="clearActive()">Borrar</button>
+    <button class="btn-key btn-action" onclick="checkAnswer()">Comprobar Resta</button>
+  </div>
+</div>
+
+<script>
+  let activeInput = null;
+  let minuendo = 846;
+  let sustraendo = 563;
+
+  const allInputs = document.querySelectorAll('input');
+  allInputs.forEach(input => {
+    input.addEventListener('click', function(e) {
+      e.stopPropagation();
+      setActive(this);
+    });
+  });
+
+  function setActive(input) {
+    allInputs.forEach(i => i.classList.remove('active'));
+    input.classList.add('active');
+    activeInput = input;
+  }
+
+  setActive(document.getElementById('r0'));
+
+  function pressNum(num) {
+    if (activeInput) {
+      activeInput.value = num;
+    }
+  }
+
+  function clearActive() {
+    if (activeInput) {
+      activeInput.value = '';
+    }
+  }
+
+  document.addEventListener('keydown', function(event) {
+    if (!activeInput) return;
+
+    if (event.key >= '0' && event.key <= '9') {
+      pressNum(event.key);
+    } else if (event.key === 'Backspace' || event.key === 'Delete') {
+      clearActive();
+    } else if (event.key === 'Enter') {
+      checkAnswer();
+    }
+  });
+
+  function newOperation() {
+    let m = Math.floor(Math.random() * 700) + 200;
+    let s = Math.floor(Math.random() * (m - 100)) + 100;
+    
+    minuendo = m;
+    sustraendo = s;
+
+    let mStr = m.toString().padStart(3, '0');
+    let sStr = s.toString().padStart(3, '0');
+
+    document.getElementById('m2').textContent = mStr[0];
+    document.getElementById('m1').textContent = mStr[1];
+    document.getElementById('m0').textContent = mStr[2];
+
+    document.getElementById('s2').textContent = sStr[0];
+    document.getElementById('s1').textContent = sStr[1];
+    document.getElementById('s0').textContent = sStr[2];
+
+    allInputs.forEach(i => {
+      i.value = '';
+    });
+    
+    document.getElementById('feedback').className = 'feedback';
+    document.getElementById('feedback').textContent = '';
+    
+    setActive(document.getElementById('r0'));
+  }
+
+  function checkAnswer() {
+    let r2 = document.getElementById('r2').value || '0';
+    let r1 = document.getElementById('r1').value || '0';
+    let r0 = document.getElementById('r0').value || '0';
+
+    let userRes = parseInt(r2 + r1 + r0);
+    let expected = minuendo - sustraendo;
+
+    let fb = document.getElementById('feedback');
+
+    if (userRes === expected) {
+      fb.className = 'feedback ok';
+      fb.textContent = '¡Excelente! La resta es correcta.';
+      setTimeout(newOperation, 2000);
+    } else {
+      fb.className = 'feedback bad';
+      fb.textContent = 'Revisa los números y vuelve a intentarlo.';
+    }
+  }
+
+  newOperation();
+</script>
+
+</body>
+</html>
